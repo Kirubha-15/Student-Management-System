@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student CRUD</title>
+</head>
+<body>
+
+<h2>Add / Update Student</h2>
+
+<input type="hidden" id="id">
+
+<input type="text" id="name" placeholder="Name"><br><br>
+<input type="email" id="email" placeholder="Email"><br><br>
+<input type="text" id="course" placeholder="Course"><br><br>
+
+<button onclick="saveStudent()">Save</button>
+<button onclick="clearForm()">Clear</button>
+
+<hr>
+
+<h2>Search Student</h2>
+<input type="number" id="searchId" placeholder="Enter ID">
+<button onclick="searchStudent()">Search</button>
+<p id="searchResult"></p>
+
+<hr>
+
+<h2>Students List</h2>
+<table border="1">
+    <thead>
+    <tr>
+        <th>ID</th><th>Name</th><th>Email</th><th>Course</th><th>Action</th>
+    </tr>
+    </thead>
+    <tbody id="studentTable"></tbody>
+</table>
+
+<script>
+    const api = "/students";
+
+    function saveStudent() {
+        const id = document.getElementById("id").value;
+
+        const student = {
+            name: document.getElementById("name").value,
+            email: document.getElementById("email").value,
+            course: document.getElementById("course").value
+        };
+
+        const method = id ? "PUT" : "POST";
+        const url = id ? `${api}/${id}` : api;
+
+        fetch(url, {
+            method: method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(student)
+        })
+            .then(() => {
+                clearForm();
+                loadStudents();   // 🔥 IMPORTANT
+            });
+    }
+
+    function loadStudents() {
+        fetch(api)
+            .then(res => res.json())
+            .then(data => {
+                const table = document.getElementById("studentTable");
+                table.innerHTML = "";
+                data.forEach(s => {
+                    table.innerHTML += `
+                <tr>
+                    <td>${s.id}</td>
+                    <td>${s.name}</td>
+                    <td>${s.email}</td>
+                    <td>${s.course}</td>
+                    <td>
+                        <button onclick="editStudent(${s.id}, '${s.name}', '${s.email}', '${s.course}')">Edit</button>
+                        <button onclick="deleteStudent(${s.id})">Delete</button>
+                    </td>
+                </tr>`;
+                });
+            });
+    }
+
+    function editStudent(id, name, email, course) {
+        document.getElementById("id").value = id;
+        document.getElementById("name").value = name;
+        document.getElementById("email").value = email;
+        document.getElementById("course").value = course;
+    }
+
+    function deleteStudent(id) {
+        fetch(`${api}/${id}`, { method: "DELETE" })
+            .then(() => loadStudents());
+    }
+
+    function clearForm() {
+        document.getElementById("id").value = "";
+        document.getElementById("name").value = "";
+        document.getElementById("email").value = "";
+        document.getElementById("course").value = "";
+    }
+
+    function searchStudent() {
+        const id = document.getElementById("searchId").value;
+        const result = document.getElementById("searchResult");
+
+        fetch(`${api}/${id}`)
+            .then(res => {
+                if (!res.ok) throw new Error("Not Found");
+                return res.json();
+            })
+            .then(s => {
+                result.innerText = `Found: ${s.name} - ${s.course}`;
+            })
+            .catch(() => {
+                result.innerText = "Student not found";
+            });
+    }
+
+    window.onload = loadStudents;
+</script>
+
+</body>
+</html>

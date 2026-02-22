@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Management</title>
+    <style>
+        table { border-collapse: collapse; width: 70%; }
+        th, td { border: 1px solid #333; padding: 8px; text-align: center; }
+        button { margin: 2px; }
+    </style>
+</head>
+<body>
+
+<h2>Add / Edit Student</h2>
+
+<!-- hidden id for update -->
+<input type="hidden" id="id">
+
+<input type="text" id="name" placeholder="Enter Name">
+<input type="email" id="email" placeholder="Enter Email">
+<input type="text" id="course" placeholder="Enter Course">
+
+<button onclick="saveStudent()">Save</button>
+
+<hr>
+
+<h2>Student List</h2>
+
+<table>
+    <thead>
+    <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Course</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody id="studentTable"></tbody>
+</table>
+
+<script>
+    const API = "/students";
+
+    /* LOAD ALL STUDENTS */
+    function loadStudents() {
+        fetch(API)
+            .then(res => res.json())
+            .then(data => {
+                const table = document.getElementById("studentTable");
+                table.innerHTML = "";
+
+                data.forEach(s => {
+                    table.innerHTML += `
+                    <tr>
+                        <td>${s.name}</td>
+                        <td>${s.email}</td>
+                        <td>${s.course}</td>
+                        <td>
+                            <button onclick='editStudent(${JSON.stringify(s)})'>Edit</button>
+                            <button onclick='deleteStudent(${s.id})'>Delete</button>
+                        </td>
+                    </tr>
+                `;
+                });
+            });
+    }
+
+    /* SAVE OR UPDATE */
+    function saveStudent() {
+        const id = document.getElementById("id").value;
+        const name = document.getElementById("name").value;
+        const email = document.getElementById("email").value;
+        const course = document.getElementById("course").value;
+
+        if (!name || !email || !course) {
+            alert("All fields are required");
+            return;
+        }
+
+        const student = { name, email, course };
+
+        if (id) {
+            // UPDATE
+            fetch(`${API}/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(student)
+            }).then(() => {
+                clearForm();
+                loadStudents();
+            });
+        } else {
+            // ADD
+            fetch(API, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(student)
+            }).then(() => {
+                clearForm();
+                loadStudents();
+            });
+        }
+    }
+
+    /* EDIT */
+    function editStudent(s) {
+        document.getElementById("id").value = s.id;
+        document.getElementById("name").value = s.name;
+        document.getElementById("email").value = s.email;
+        document.getElementById("course").value = s.course;
+    }
+
+    /* DELETE */
+    function deleteStudent(id) {
+        fetch(`${API}/${id}`, { method: "DELETE" })
+            .then(() => loadStudents());
+    }
+
+    /* CLEAR FORM */
+    function clearForm() {
+        document.getElementById("id").value = "";
+        document.getElementById("name").value = "";
+        document.getElementById("email").value = "";
+        document.getElementById("course").value = "";
+    }
+
+    /* LOAD ON PAGE START */
+    window.onload = loadStudents;
+</script>
+
+</body>
+</html>
